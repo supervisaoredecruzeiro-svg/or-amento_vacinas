@@ -164,7 +164,10 @@ input[type="date"]{cursor:pointer}
     <div class="fi" id="fI" style="display:none"><div><i class="fa-solid fa-user-nurse"></i><strong>Farmacêutico(a):</strong><span id="fN"></span></div><div><i class="fa-solid fa-id-card"></i><strong>CRF:</strong><span id="fC"></span></div></div></div>
   <div class="ib"><i class="fa-solid fa-house-chimney-medical ic"></i><p>Aplicação domiciliar <strong>GRATUITA</strong> para pacientes residentes em Ituiutaba/MG.</p></div>
   <div class="ib"><i class="fa-solid fa-calendar-check ic"></i><p>Este orçamento é válido por <strong>7 (sete) dias</strong> a partir da data de emissão.</p></div>
-  <div class="bp"><button onclick="gPDF()"><i class="fa-solid fa-file-pdf"></i>BAIXAR ORÇAMENTO EM PDF</button></div>
+  <div class="bp" style="display:flex;justify-content:center;gap:10px;flex-wrap:wrap">
+    <button onclick="gPDF()"><i class="fa-solid fa-file-pdf"></i>BAIXAR EM PDF</button>
+    <button onclick="gJPG()" style="background:linear-gradient(135deg,#1a5e2a,#27ae60)"><i class="fa-solid fa-image"></i>BAIXAR EM JPG</button>
+  </div>
 </div>
 <div class="ft"><p>Se é Cruzeiro, você pode <em>confiar!</em></p></div>
 <div id="pa"></div>
@@ -278,13 +281,12 @@ function rc(){var s=0,d=0;document.querySelectorAll('#tb tr').forEach(function(t
 function sFF(){var i=parseInt(document.getElementById('sF').value),f=document.getElementById('fI');if(isNaN(i)){f.style.display='none';return}document.getElementById('fN').textContent=F[i].n;document.getElementById('fC').textContent=F[i].c;f.style.display='flex'}
 document.addEventListener('DOMContentLoaded',function(){var h=new Date();document.getElementById('dP').value=h.getFullYear()+'-'+String(h.getMonth()+1).padStart(2,'0')+'-'+String(h.getDate()).padStart(2,'0');document.getElementById('tP').addEventListener('input',function(e){var v=e.target.value.replace(/\D/g,'');if(v.length>11)v=v.substring(0,11);if(v.length>6)v='('+v.substring(0,2)+') '+v.substring(2,7)+'-'+v.substring(7);else if(v.length>2)v='('+v.substring(0,2)+') '+v.substring(2);else if(v.length>0)v='('+v;e.target.value=v});F.forEach(function(f,i){var o=document.createElement('option');o.value=i;o.textContent=f.n;document.getElementById('sF').appendChild(o)});aL()});
 function fD(d){if(!d)return'';var p=d.split('-');return p.length===3?p[2]+'/'+p[1]+'/'+p[0]:d}
-function gPDF(){
+function buildOrcamento(){
 var nm=document.getElementById('nP').value.trim()||'________________________',tl=document.getElementById('tP').value.trim()||'________________________',dv=document.getElementById('dP').value,dt=fD(dv)||'________________________';
 var it=[];document.querySelectorAll('#tb tr').forEach(function(t){var i=parseInt($(t.querySelector('.sv')).val());if(!isNaN(i)){var p=pv(t.querySelector('.pi').value),q=parseInt(t.querySelector('.qi').value)||1,d=parseFloat(t.querySelector('.di').value)||0,b=p*q;if(p>0)it.push({ind:V[i].i,nom:V[i].n,q:q,u:p,dp:d,dv:b*(d/100),t:b-b*(d/100),b:b})}});
 var s=0,td=0;it.forEach(function(i){s+=i.b;td+=i.dv});var fn=s-td;
 var fi=parseInt(document.getElementById('sF').value),fnn=isNaN(fi)?'________________________':F[fi].n,fcc=isNaN(fi)?'________________________':F[fi].c;
 var tr='';it.forEach(function(i){tr+='<tr><td><strong>'+i.ind+'</strong> <span style="font-size:.62rem;color:#777">('+i.nom+')</span></td><td>'+i.q+'</td><td>'+fm(i.u)+'</td><td>'+i.dp+'%</td><td>'+fm(i.dv)+'</td><td style="font-weight:700">'+fm(i.t)+'</td></tr>'});
-/* Gerar QR Code localmente (sem requisição de rede) */
 var qrDiv=document.createElement('div');
 new QRCode(qrDiv,{text:'https://wa.me/5534996453839',width:136,height:136,colorDark:'#003E7E',colorLight:'#ffffff',correctLevel:QRCode.CorrectLevel.M});
 var qrSrc=qrDiv.querySelector('canvas')?qrDiv.querySelector('canvas').toDataURL('image/png'):(qrDiv.querySelector('img')?qrDiv.querySelector('img').src:'');
@@ -321,6 +323,10 @@ pa.innerHTML=
 '</div>'+
 '</div>';
 pa.style.left='0';pa.style.position='fixed';pa.style.zIndex='99999';
-setTimeout(function(){html2canvas(pa,{scale:2,useCORS:true,allowTaint:true,backgroundColor:'#ffffff',width:794,windowWidth:794,logging:false}).then(function(c){pa.style.left='-9999px';pa.style.position='absolute';pa.style.zIndex='';var pdf=new window.jspdf.jsPDF('p','mm','a4');var pW=210,pH=297,iW=pW,iH=(c.height*iW)/c.width;if(iH>pH){var r=pH/iH;iH=pH;iW*=r}pdf.addImage(c.toDataURL('image/jpeg',.92),'JPEG',(pW-iW)/2,0,iW,iH);var a='Orcamento_Vacinas';var n=document.getElementById('nP').value.trim();if(n)a+='_'+n.replace(/\s+/g,'_').substring(0,30);a+='_'+dt.replace(/\//g,'-')+'.pdf';pdf.save(a)}).catch(function(e){console.error('PDF:',e);alert('Erro ao gerar PDF: '+e.message)})},300);
+return {pa:pa,dt:dt};
 }
+function getFileName(dt,ext){var a='Orcamento_Vacinas';var n=document.getElementById('nP').value.trim();if(n)a+='_'+n.replace(/\s+/g,'_').substring(0,30);a+='_'+dt.replace(/\//g,'-')+'.'+ext;return a}
+function renderCanvas(cb){var info=buildOrcamento();setTimeout(function(){html2canvas(info.pa,{scale:2,useCORS:true,allowTaint:true,backgroundColor:'#ffffff',width:794,windowWidth:794,logging:false}).then(function(c){info.pa.style.left='-9999px';info.pa.style.position='absolute';info.pa.style.zIndex='';cb(c,info.dt)}).catch(function(e){info.pa.style.left='-9999px';info.pa.style.position='absolute';info.pa.style.zIndex='';console.error('Render:',e);alert('Erro ao gerar: '+e.message)})},300)}
+function gPDF(){renderCanvas(function(c,dt){var pdf=new window.jspdf.jsPDF('p','mm','a4');var pW=210,pH=297,iW=pW,iH=(c.height*iW)/c.width;if(iH>pH){var r=pH/iH;iH=pH;iW*=r}pdf.addImage(c.toDataURL('image/jpeg',.92),'JPEG',(pW-iW)/2,0,iW,iH);pdf.save(getFileName(dt,'pdf'))})}
+function gJPG(){renderCanvas(function(c,dt){var link=document.createElement('a');link.download=getFileName(dt,'jpg');link.href=c.toDataURL('image/jpeg',0.92);link.click()})}
 </script></body></html>
